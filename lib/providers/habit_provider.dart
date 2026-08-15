@@ -1,72 +1,82 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../database/database_helper.dart';
 import '../models/habit_model.dart';
 
 class HabitNotifier extends Notifier<List<Habit>> {
   @override
   List<Habit> build() {
-    return [
-      Habit(
-        id: 1,
-        name: 'Drink Water',
-        description: 'Drink 8 glasses of water',
-        category: 'Health',
-        icon: 'water',
-        color: 0xFF6C5CE7,
-        repeatDays: const [1, 2, 3, 4, 5, 6, 7],
-        currentStreak: 7,
-        createdAt: DateTime.now(),
-      ),
-      Habit(
-        id: 2,
-        name: 'Read a Book',
-        description: 'Read for 30 minutes',
-        category: 'Study',
-        icon: 'book',
-        color: 0xFFFF8A00,
-        repeatDays: const [1, 2, 3, 4, 5],
-        currentStreak: 4,
-        createdAt: DateTime.now(),
-      ),
-      Habit(
-        id: 3,
-        name: 'Exercise',
-        description: 'Exercise for 20 minutes',
-        category: 'Fitness',
-        icon: 'fitness',
-        color: 0xFF22C55E,
-        repeatDays: const [1, 3, 5],
-        currentStreak: 3,
-        createdAt: DateTime.now(),
-      ),
+    _loadHabits();
+
+    return [];
+  }
+
+  Future<void> _loadHabits() async {
+    final data = await DatabaseHelper.instance.getHabits();
+
+    state = data.map((map) {
+      return Habit.fromMap(map);
+    }).toList();
+  }
+
+  // CREATE
+  Future<void> addHabit(Habit habit) async {
+    final id = await DatabaseHelper.instance.insertHabit(
+      habit.toMap(),
+    );
+
+    final newHabit = habit.copyWith(
+      id: id,
+    );
+
+    state = [
+      newHabit,
+      ...state,
     ];
   }
 
-  void addHabit(Habit habit) {
-    state = [...state, habit];
+  // DELETE
+  Future<void> deleteHabit(int id) async {
+    await DatabaseHelper.instance.deleteHabit(id);
+
+    state = state
+        .where((habit) => habit.id != id)
+        .toList();
   }
 
-  void deleteHabit(int id) {
-    state = state.where((habit) => habit.id != id).toList();
-  }
+  // UPDATE
+  Future<void> updateHabit(
+    Habit updatedHabit,
+  ) async {
+    if (updatedHabit.id == null) {
+      return;
+    }
 
-  void updateHabit(Habit updatedHabit) {
+    await DatabaseHelper.instance.updateHabit(
+      updatedHabit.id!,
+      updatedHabit.toMap(),
+    );
+
     state = [
       for (final habit in state)
-        if (habit.id == updatedHabit.id) updatedHabit else habit,
-    ];
-  }
-
-  void toggleHabit(int id) {
-    state = [
-      for (final habit in state)
-        if (habit.id == id)
-          habit.copyWith(
-            isCompleted: !habit.isCompleted,
-          )
+        if (habit.id == updatedHabit.id)
+          updatedHabit
         else
           habit,
     ];
+  }
+
+  // TOGGLE COMPLETE
+  Future<void> toggleHabit(int id) async {
+    final habit = state.firstWhere(
+      (habit) => habit.id == id,
+    );
+
+    final updatedHabit = habit.copyWith(
+      isCompleted: !habit.isCompleted,
+    );
+
+    await updateHabit(updatedHabit);
   }
 }
 

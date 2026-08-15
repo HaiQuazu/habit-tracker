@@ -4,122 +4,123 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/habit_model.dart';
 import '../providers/habit_provider.dart';
 import '../themes/app_colors.dart';
+import 'add_habit_screen.dart';
 
 class HabitDetailScreen extends ConsumerWidget {
   final Habit habit;
 
-  const HabitDetailScreen({
-    super.key,
-    required this.habit,
-  });
+  const HabitDetailScreen({super.key, required this.habit});
+
+  IconData _getHabitIcon(String icon) {
+    switch (icon) {
+      case 'water':
+        return Icons.water_drop_rounded;
+      case 'book':
+        return Icons.menu_book_rounded;
+      case 'fitness':
+        return Icons.fitness_center_rounded;
+      case 'sleep':
+        return Icons.bedtime_rounded;
+      case 'music':
+        return Icons.music_note_rounded;
+      case 'check':
+      default:
+        return Icons.check_rounded;
+    }
+  }
+
+  String _getRepeatText() {
+    const days = {
+      1: 'Monday',
+      2: 'Tuesday',
+      3: 'Wednesday',
+      4: 'Thursday',
+      5: 'Friday',
+      6: 'Saturday',
+      7: 'Sunday',
+    };
+
+    return habit.repeatDays
+        .map((day) => days[day] ?? '')
+        .where((day) => day.isNotEmpty)
+        .join(', ');
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Get the latest version from Riverpod.
-    final habits = ref.watch(habitProvider);
-
-    final currentHabit = habits.firstWhere(
-      (item) => item.id == habit.id,
-      orElse: () => habit,
-    );
-
     return Scaffold(
-      backgroundColor: AppColors.background,
-
       appBar: AppBar(
         title: const Text(
           'Habit Details',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
         actions: [
           IconButton(
-            onPressed: () {
-              _showDeleteDialog(
+            onPressed: () async {
+              await Navigator.push(
                 context,
-                ref,
-                currentHabit,
+                MaterialPageRoute(builder: (_) => AddHabitScreen(habit: habit)),
               );
             },
-            icon: const Icon(
-              Icons.delete_outline_rounded,
-            ),
+            icon: const Icon(Icons.edit_outlined),
+          ),
+
+          IconButton(
+            onPressed: () {
+              _showDeleteDialog(context, ref);
+            },
+            icon: const Icon(Icons.delete_outline_rounded),
           ),
         ],
       ),
 
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+        padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Main habit card
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(22),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.purple,
-                borderRadius: BorderRadius.circular(26),
+                color: Color(habit.color),
+                borderRadius: BorderRadius.circular(24),
               ),
               child: Column(
                 children: [
                   Container(
-                    width: 70,
-                    height: 70,
+                    width: 72,
+                    height: 72,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12),
+                      color: Colors.white.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(22),
                     ),
                     child: Icon(
-                      _getIcon(currentHabit.icon),
+                      _getHabitIcon(habit.icon),
                       color: Colors.white,
-                      size: 34,
+                      size: 36,
                     ),
                   ),
 
                   const SizedBox(height: 16),
 
                   Text(
-                    currentHabit.name,
+                    habit.name,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 24,
+                      fontSize: 26,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
 
-                  if (currentHabit.description.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      currentHabit.description,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
+                  const SizedBox(height: 6),
 
-                  const SizedBox(height: 20),
-
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      currentHabit.category,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  Text(
+                    habit.category,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -128,191 +129,87 @@ class HabitDetailScreen extends ConsumerWidget {
 
             const SizedBox(height: 20),
 
-            // Streak
-            _sectionTitle('Current Streak'),
+            if (habit.description.isNotEmpty)
+              _infoCard(
+                title: 'Description',
+                child: Text(
+                  habit.description,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+              ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
 
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: _cardDecoration(),
+            _infoCard(
+              title: 'Repeat',
               child: Row(
                 children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: AppColors.orange.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(
-                      Icons.local_fire_department_rounded,
-                      color: AppColors.orange,
-                      size: 28,
-                    ),
+                  const Icon(
+                    Icons.calendar_today_rounded,
+                    size: 20,
+                    color: AppColors.purple,
                   ),
-
-                  const SizedBox(width: 14),
-
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${currentHabit.currentStreak} days',
-                        style: const TextStyle(
-                          fontSize: 21,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      const Text(
-                        'Keep your streak going!',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Schedule
-            _sectionTitle('Repeat Schedule'),
-
-            const SizedBox(height: 10),
-
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: _cardDecoration(),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(7, (index) {
-                  final day = index + 1;
-                  final selected =
-                      currentHabit.repeatDays.contains(day);
-
-                  const labels = [
-                    'M',
-                    'T',
-                    'W',
-                    'T',
-                    'F',
-                    'S',
-                    'S',
-                  ];
-
-                  return Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? AppColors.purple
-                          : AppColors.background,
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      labels[index],
-                      style: TextStyle(
-                        color: selected
-                            ? Colors.white
-                            : AppColors.grey,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Completion
-            _sectionTitle('Today'),
-
-            const SizedBox(height: 10),
-
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: _cardDecoration(),
-              child: Row(
-                children: [
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Today\'s progress',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          currentHabit.isCompleted
-                              ? 'Completed for today'
-                              : 'Not completed yet',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      _getRepeatText(),
+                      style: const TextStyle(color: AppColors.textSecondary),
                     ),
-                  ),
-
-                  Switch(
-                    value: currentHabit.isCompleted,
-                    activeColor: AppColors.purple,
-                    onChanged: (_) {
-                      ref
-                          .read(habitProvider.notifier)
-                          .toggleHabit(currentHabit.id!);
-                    },
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 12),
 
-            // Delete button
+            Row(
+              children: [
+                Expanded(
+                  child: _statCard(
+                    icon: Icons.local_fire_department_rounded,
+                    title: 'Current Streak',
+                    value: '${habit.currentStreak}',
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _statCard(
+                    icon: Icons.check_circle_outline_rounded,
+                    title: 'Status',
+                    value: habit.isCompleted ? 'Done' : 'Pending',
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
             SizedBox(
               width: double.infinity,
-              height: 52,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  _showDeleteDialog(
-                    context,
-                    ref,
-                    currentHabit,
-                  );
+              height: 54,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  await ref.read(habitProvider.notifier).toggleHabit(habit.id!);
+
+                  if (!context.mounted) return;
+
+                  Navigator.pop(context);
                 },
-                icon: const Icon(
-                  Icons.delete_outline_rounded,
+                icon: Icon(
+                  habit.isCompleted ? Icons.undo_rounded : Icons.check_rounded,
                 ),
-                label: const Text(
-                  'Delete Habit',
+                label: Text(
+                  habit.isCompleted ? 'Mark as Incomplete' : 'Mark as Complete',
                 ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.redAccent,
-                  side: const BorderSide(
-                    color: Color(0xFFFFCDD2),
-                  ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.purple,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(17),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                 ),
               ),
@@ -323,65 +220,78 @@ class HabitDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _sectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
+  Widget _infoCard({required String title, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
       ),
     );
   }
 
-  BoxDecoration _cardDecoration() {
-    return BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(
-        color: AppColors.border,
+  Widget _statCard({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: AppColors.purple, size: 26),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  IconData _getIcon(String icon) {
-    switch (icon) {
-      case 'water':
-        return Icons.water_drop_rounded;
-      case 'book':
-        return Icons.menu_book_rounded;
-      case 'fitness':
-        return Icons.fitness_center_rounded;
-      case 'work':
-        return Icons.work_outline_rounded;
-      case 'sleep':
-        return Icons.bedtime_rounded;
-      default:
-        return Icons.check_circle_outline_rounded;
-    }
-  }
-
-  void _showDeleteDialog(
-    BuildContext context,
-    WidgetRef ref,
-    Habit habit,
-  ) {
+  void _showDeleteDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-          ),
-          title: const Text(
-            'Delete Habit?',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          content: Text(
-            'Are you sure you want to delete "${habit.name}"?',
-          ),
+          title: const Text('Delete Habit?'),
+          content: const Text('This habit will be permanently deleted.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -389,14 +299,11 @@ class HabitDetailScreen extends ConsumerWidget {
               },
               child: const Text('Cancel'),
             ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-              ),
-              onPressed: () {
-                ref
-                    .read(habitProvider.notifier)
-                    .deleteHabit(habit.id!);
+            TextButton(
+              onPressed: () async {
+                await ref.read(habitProvider.notifier).deleteHabit(habit.id!);
+
+                if (!context.mounted) return;
 
                 Navigator.pop(dialogContext);
                 Navigator.pop(context);

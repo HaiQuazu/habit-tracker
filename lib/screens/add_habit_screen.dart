@@ -6,7 +6,9 @@ import '../providers/habit_provider.dart';
 import '../themes/app_colors.dart';
 
 class AddHabitScreen extends ConsumerStatefulWidget {
-  const AddHabitScreen({super.key});
+  final Habit? habit;
+
+  const AddHabitScreen({super.key, this.habit});
 
   @override
   ConsumerState<AddHabitScreen> createState() => _AddHabitScreenState();
@@ -21,7 +23,9 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   String selectedCategory = 'Health';
   String selectedIcon = 'check';
 
-  final List<int> selectedDays = [];
+  int selectedColor = 0xFF6C5CE7;
+
+  final List<int> selectedDays = [1, 2, 3, 4, 5, 6, 7];
 
   final List<String> categories = [
     'Health',
@@ -32,65 +36,86 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   ];
 
   final List<Map<String, dynamic>> icons = [
-    {
-      'name': 'check',
-      'icon': Icons.check_circle_outline_rounded,
-    },
-    {
-      'name': 'water',
-      'icon': Icons.water_drop_rounded,
-    },
-    {
-      'name': 'book',
-      'icon': Icons.menu_book_rounded,
-    },
-    {
-      'name': 'fitness',
-      'icon': Icons.fitness_center_rounded,
-    },
-    {
-      'name': 'sleep',
-      'icon': Icons.bedtime_rounded,
-    },
-    {
-      'name': 'work',
-      'icon': Icons.work_outline_rounded,
-    },
+    {'name': 'check', 'icon': Icons.check_rounded},
+    {'name': 'water', 'icon': Icons.water_drop_rounded},
+    {'name': 'book', 'icon': Icons.menu_book_rounded},
+    {'name': 'fitness', 'icon': Icons.fitness_center_rounded},
+    {'name': 'sleep', 'icon': Icons.bedtime_rounded},
+    {'name': 'music', 'icon': Icons.music_note_rounded},
   ];
+
+  final List<int> colors = [
+    0xFF6C5CE7,
+    0xFFFF8A00,
+    0xFF22C55E,
+    0xFF3B82F6,
+    0xFFEC4899,
+    0xFF14B8A6,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    final habit = widget.habit;
+
+    if (habit != null) {
+      _nameController.text = habit.name;
+      _descriptionController.text = habit.description;
+
+      selectedCategory = habit.category;
+      selectedIcon = habit.icon;
+      selectedColor = habit.color;
+
+      selectedDays
+        ..clear()
+        ..addAll(habit.repeatDays);
+    }
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+
     super.dispose();
   }
 
-  void saveHabit() {
+  Future<void> _saveHabit() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     if (selectedDays.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select at least one day.'),
-        ),
+        const SnackBar(content: Text('Please select at least one day.')),
       );
+
       return;
     }
 
+    final oldHabit = widget.habit;
+
     final habit = Habit(
-      id: DateTime.now().millisecondsSinceEpoch,
+      id: oldHabit?.id,
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim(),
       category: selectedCategory,
       icon: selectedIcon,
-      color: AppColors.purple.value,
-      repeatDays: selectedDays,
-      createdAt: DateTime.now(),
+      color: selectedColor,
+      repeatDays: List.from(selectedDays),
+      isCompleted: oldHabit?.isCompleted ?? false,
+      currentStreak: oldHabit?.currentStreak ?? 0,
+      createdAt: oldHabit?.createdAt ?? DateTime.now(),
     );
 
-    ref.read(habitProvider.notifier).addHabit(habit);
+    if (oldHabit == null) {
+      await ref.read(habitProvider.notifier).addHabit(habit);
+    } else {
+      await ref.read(habitProvider.notifier).updateHabit(habit);
+    }
+
+    if (!mounted) return;
 
     Navigator.pop(context);
   }
@@ -101,11 +126,9 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
       backgroundColor: AppColors.background,
 
       appBar: AppBar(
-        title: const Text(
-          'Add Habit',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-          ),
+        title: Text(
+          widget.habit == null ? 'Add Habit' : 'Edit Habit',
+          style: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
 
@@ -116,49 +139,39 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Habit name
-              _label('Habit name'),
+              _sectionTitle('Habit Information'),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
-              TextFormField(
+              _buildTextField(
                 controller: _nameController,
-                textInputAction: TextInputAction.next,
-                decoration: _inputDecoration(
-                  hint: 'e.g. Drink Water',
-                  icon: Icons.edit_rounded,
-                ),
+                label: 'Habit Name',
+                hint: 'e.g. Drink Water',
+                icon: Icons.edit_rounded,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a habit name.';
+                    return 'Please enter a habit name';
                   }
 
                   return null;
                 },
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
 
-              // Description
-              _label('Description'),
-
-              const SizedBox(height: 8),
-
-              TextFormField(
+              _buildTextField(
                 controller: _descriptionController,
+                label: 'Description',
+                hint: 'What do you want to achieve?',
+                icon: Icons.notes_rounded,
                 maxLines: 3,
-                decoration: _inputDecoration(
-                  hint: 'What do you want to achieve?',
-                  icon: Icons.notes_rounded,
-                ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-              // Category
-              _label('Category'),
+              _sectionTitle('Category'),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
               Wrap(
                 spacing: 8,
@@ -174,36 +187,29 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         selectedCategory = category;
                       });
                     },
-                    selectedColor: AppColors.purple,
-                    backgroundColor: AppColors.surface,
+                    selectedColor: AppColors.purple.withValues(alpha: 0.15),
                     labelStyle: TextStyle(
                       color: selected
-                          ? Colors.white
-                          : AppColors.textPrimary,
+                          ? AppColors.purple
+                          : AppColors.textSecondary,
                       fontWeight: FontWeight.w600,
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: selected
-                            ? AppColors.purple
-                            : AppColors.border,
-                      ),
+                    side: BorderSide(
+                      color: selected ? AppColors.purple : AppColors.border,
                     ),
                   );
                 }).toList(),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-              // Icon
-              _label('Choose icon'),
+              _sectionTitle('Icon'),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
               Wrap(
-                spacing: 10,
-                runSpacing: 10,
+                spacing: 12,
+                runSpacing: 12,
                 children: icons.map((item) {
                   final selected = selectedIcon == item['name'];
 
@@ -213,50 +219,86 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                         selectedIcon = item['name'];
                       });
                     },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      width: 52,
-                      height: 52,
+                    child: Container(
+                      width: 54,
+                      height: 54,
                       decoration: BoxDecoration(
                         color: selected
-                            ? AppColors.purple
+                            ? Color(selectedColor)
                             : AppColors.surface,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: selected
-                              ? AppColors.purple
+                              ? Color(selectedColor)
                               : AppColors.border,
+                          width: selected ? 2 : 1,
                         ),
                       ),
                       child: Icon(
-                        item['icon'],
+                        item['icon'] as IconData,
                         color: selected
                             ? Colors.white
                             : AppColors.textSecondary,
-                        size: 24,
                       ),
                     ),
                   );
                 }).toList(),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-              // Repeat days
-              _label('Repeat on'),
+              _sectionTitle('Color'),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
-              _buildDays(),
+              Wrap(
+                spacing: 12,
+                children: colors.map((color) {
+                  final selected = selectedColor == color;
+
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedColor = color;
+                      });
+                    },
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: Color(color),
+                        shape: BoxShape.circle,
+                        border: selected
+                            ? Border.all(color: AppColors.textPrimary, width: 3)
+                            : null,
+                      ),
+                      child: selected
+                          ? const Icon(
+                              Icons.check_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            )
+                          : null,
+                    ),
+                  );
+                }).toList(),
+              ),
+
+              const SizedBox(height: 24),
+
+              _sectionTitle('Repeat'),
+
+              const SizedBox(height: 12),
+
+              _buildDaysSelector(),
 
               const SizedBox(height: 30),
 
-              // Save button
               SizedBox(
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: saveHabit,
+                  onPressed: _saveHabit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.purple,
                     foregroundColor: Colors.white,
@@ -266,11 +308,8 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
                     ),
                   ),
                   child: const Text(
-                    'Create Habit',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    'Save Habit',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -281,100 +320,85 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
     );
   }
 
-  Widget _label(String text) {
+  Widget _sectionTitle(String title) {
     return Text(
-      text,
+      title,
       style: const TextStyle(
-        fontSize: 15,
+        fontSize: 18,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
       ),
     );
   }
 
-  InputDecoration _inputDecoration({
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
     required String hint,
     required IconData icon,
+    int maxLines = 1,
+    String? Function(String?)? validator,
   }) {
-    return InputDecoration(
-      hintText: hint,
-      prefixIcon: Icon(
-        icon,
-        color: AppColors.textSecondary,
-      ),
-      filled: true,
-      fillColor: AppColors.surface,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: AppColors.border,
+    return TextFormField(
+      controller: controller,
+      maxLines: maxLines,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: Icon(icon),
+        filled: true,
+        fillColor: AppColors.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: AppColors.border,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: AppColors.purple,
-          width: 2,
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: AppColors.purple, width: 2),
         ),
       ),
     );
   }
 
-  Widget _buildDays() {
-    const days = [
-      'M',
-      'T',
-      'W',
-      'T',
-      'F',
-      'S',
-      'S',
-    ];
+  Widget _buildDaysSelector() {
+    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(days.length, (index) {
-        final dayNumber = index + 1;
-        final selected = selectedDays.contains(dayNumber);
+      children: List.generate(7, (index) {
+        final day = index + 1;
+        final selected = selectedDays.contains(day);
 
         return GestureDetector(
           onTap: () {
             setState(() {
               if (selected) {
-                selectedDays.remove(dayNumber);
+                selectedDays.remove(day);
               } else {
-                selectedDays.add(dayNumber);
+                selectedDays.add(day);
               }
             });
           },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
+          child: Container(
             width: 40,
             height: 40,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: selected
-                  ? AppColors.purple
-                  : AppColors.surface,
+              color: selected ? AppColors.purple : AppColors.surface,
               shape: BoxShape.circle,
               border: Border.all(
-                color: selected
-                    ? AppColors.purple
-                    : AppColors.border,
+                color: selected ? AppColors.purple : AppColors.border,
               ),
             ),
-            alignment: Alignment.center,
             child: Text(
               days[index],
               style: TextStyle(
-                color: selected
-                    ? Colors.white
-                    : AppColors.textSecondary,
+                color: selected ? Colors.white : AppColors.textSecondary,
                 fontWeight: FontWeight.w700,
               ),
             ),

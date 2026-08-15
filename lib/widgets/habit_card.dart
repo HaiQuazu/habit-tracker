@@ -44,7 +44,7 @@ class HabitCard extends ConsumerWidget {
               height: 48,
               decoration: BoxDecoration(
                 color: completed
-                    ? AppColors.purple.withOpacity(0.12)
+                    ? AppColors.purple.withValues(alpha: 0.12)
                     : AppColors.background,
                 borderRadius: BorderRadius.circular(15),
               ),

@@ -37,17 +37,19 @@ class DatabaseHelper {
       CREATE TABLE habits (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        description TEXT,
-        category TEXT,
-        frequency TEXT,
-        color INTEGER,
+        description TEXT NOT NULL,
+        category TEXT NOT NULL,
+        icon TEXT NOT NULL,
+        color INTEGER NOT NULL,
+        repeatDays TEXT NOT NULL,
+        isCompleted INTEGER NOT NULL DEFAULT 0,
         currentStreak INTEGER NOT NULL DEFAULT 0,
-        longestStreak INTEGER NOT NULL DEFAULT 0,
-        isCompleted INTEGER NOT NULL DEFAULT 0
+        createdAt TEXT NOT NULL
       )
     ''');
   }
 
+  // CREATE
   Future<int> insertHabit(
     Map<String, dynamic> habit,
   ) async {
@@ -59,6 +61,7 @@ class DatabaseHelper {
     );
   }
 
+  // READ
   Future<List<Map<String, dynamic>>> getHabits() async {
     final db = await database;
 
@@ -68,6 +71,7 @@ class DatabaseHelper {
     );
   }
 
+  // UPDATE
   Future<int> updateHabit(
     int id,
     Map<String, dynamic> habit,
@@ -82,6 +86,7 @@ class DatabaseHelper {
     );
   }
 
+  // DELETE
   Future<int> deleteHabit(int id) async {
     final db = await database;
 
