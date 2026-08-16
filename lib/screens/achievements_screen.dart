@@ -95,12 +95,12 @@ class AchievementsScreen extends ConsumerWidget {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12),
+                      color: AppColors.white.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Icon(
                       Icons.emoji_events_rounded,
-                      color: Colors.white,
+                      color: AppColors.white,
                       size: 34,
                     ),
                   ),
@@ -115,7 +115,7 @@ class AchievementsScreen extends ConsumerWidget {
                         const Text(
                           'Your Achievements',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.white,
                             fontSize: 19,
                             fontWeight: FontWeight.w700,
                           ),
@@ -125,8 +125,8 @@ class AchievementsScreen extends ConsumerWidget {
 
                         Text(
                           '$unlockedCount of ${achievements.length} unlocked',
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color: AppColors.white.withValues(alpha: 0.7),
                             fontSize: 13,
                           ),
                         ),
@@ -195,7 +195,7 @@ class _AchievementCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: unlocked
-              ? AppColors.purple.withOpacity(0.2)
+              ? AppColors.purple.withValues(alpha: 0.2)
               : AppColors.border,
         ),
       ),
@@ -206,7 +206,7 @@ class _AchievementCard extends StatelessWidget {
             height: 56,
             decoration: BoxDecoration(
               color: unlocked
-                  ? AppColors.purple.withOpacity(0.1)
+                  ? AppColors.purple.withValues(alpha: 0.1)
                   : AppColors.background,
               borderRadius: BorderRadius.circular(18),
             ),

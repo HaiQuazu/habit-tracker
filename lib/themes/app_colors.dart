@@ -22,11 +22,10 @@ class AppColors {
   static const border = Color(0xFFE5E7EB);
 
   // Basic
-  static const white = Colors.white;
-  static const black = Colors.black;
+  static const white = Color(0xFFFFFFFF);
+  static const black = Color(0xFF000000);
 
-  // I just add by my self
-  static const green = Colors.green;
-  static const blue = Colors.blue;
-
+  // Custom status/accent colors
+  static const green = Color(0xFF22C55E);
+  static const blue = Color(0xFF3B82F6);
 }

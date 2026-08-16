@@ -13,14 +13,12 @@ class SettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-
       appBar: AppBar(
         title: const Text(
           'Settings',
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
-
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
         children: [
@@ -32,9 +30,7 @@ class SettingsScreen extends ConsumerWidget {
               color: AppColors.textPrimary,
             ),
           ),
-
           const SizedBox(height: 12),
-
           _SettingsCard(
             children: [
               _SettingsTile(
@@ -51,9 +47,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 24),
-
           const Text(
             'General',
             style: TextStyle(
@@ -62,9 +56,7 @@ class SettingsScreen extends ConsumerWidget {
               color: AppColors.textPrimary,
             ),
           ),
-
           const SizedBox(height: 12),
-
           _SettingsCard(
             children: [
               _SettingsTile(
@@ -83,9 +75,7 @@ class SettingsScreen extends ConsumerWidget {
                   );
                 },
               ),
-
               const Divider(height: 1, color: AppColors.border),
-
               _SettingsTile(
                 icon: Icons.alarm_rounded,
                 title: 'Reminder Time',
@@ -104,9 +94,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 24),
-
           const Text(
             'App',
             style: TextStyle(
@@ -115,9 +103,7 @@ class SettingsScreen extends ConsumerWidget {
               color: AppColors.textPrimary,
             ),
           ),
-
           const SizedBox(height: 12),
-
           _SettingsCard(
             children: [
               _SettingsTile(
@@ -142,7 +128,7 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                       child: const Icon(
                         Icons.check_rounded,
-                        color: Colors.white,
+                        color: AppColors.white,
                       ),
                     ),
                     children: const [
@@ -153,9 +139,7 @@ class SettingsScreen extends ConsumerWidget {
                   );
                 },
               ),
-
               const Divider(height: 1, color: AppColors.border),
-
               _SettingsTile(
                 icon: Icons.code_rounded,
                 title: 'Version',
@@ -164,13 +148,14 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 30),
-
-          Center(
+          const Center(
             child: Text(
               'Build better habits, one day at a time.',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
         ],
@@ -230,9 +215,7 @@ class _SettingsTile extends StatelessWidget {
               ),
               child: Icon(icon, color: AppColors.purple, size: 22),
             ),
-
             const SizedBox(width: 14),
-
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,7 +239,6 @@ class _SettingsTile extends StatelessWidget {
                 ],
               ),
             ),
-
             trailing,
           ],
         ),

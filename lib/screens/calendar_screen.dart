@@ -8,338 +8,338 @@ class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
 
   @override
-  ConsumerState<CalendarScreen> createState() =>
-      _CalendarScreenState();
+  ConsumerState<CalendarScreen> createState() => _CalendarScreenState();
 }
 
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
-  DateTime selectedDate = DateTime.now();
+  DateTime selectedMonth = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
     final habits = ref.watch(habitProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-
       appBar: AppBar(
         title: const Text(
           'Calendar',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          _buildMonthHeader(),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildCalendar(),
+          const SizedBox(height: 20),
 
-            const SizedBox(height: 24),
+          _buildWeekDays(),
 
-            const Text(
-              'Selected Day',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
+          const SizedBox(height: 8),
 
-            const SizedBox(height: 6),
+          _buildCalendar(habits),
 
-            Text(
-              _formatDate(selectedDate),
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-            ),
+          const SizedBox(height: 24),
 
-            const SizedBox(height: 14),
+          _buildLegend(),
 
-            if (habits.isEmpty)
-              _emptyState()
-            else
-              ...habits.map(
-                (habit) => _habitItem(
-                  habit.name,
-                  habit.isCompleted,
-                ),
-              ),
-          ],
-        ),
+          const SizedBox(height: 24),
+
+          _buildSelectedDayInfo(habits),
+        ],
       ),
     );
   }
 
-  Widget _buildCalendar() {
-    final firstDay = DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      1,
+  Widget _buildMonthHeader() {
+    final monthName = _monthName(selectedMonth.month);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          onPressed: () {
+            setState(() {
+              selectedMonth = DateTime(
+                selectedMonth.year,
+                selectedMonth.month - 1,
+              );
+            });
+          },
+          icon: const Icon(Icons.chevron_left_rounded),
+        ),
+
+        Text(
+          '$monthName ${selectedMonth.year}',
+          style: const TextStyle(
+            fontSize: 19,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+
+        IconButton(
+          onPressed: () {
+            setState(() {
+              selectedMonth = DateTime(
+                selectedMonth.year,
+                selectedMonth.month + 1,
+              );
+            });
+          },
+          icon: const Icon(Icons.chevron_right_rounded),
+        ),
+      ],
     );
+  }
+
+  Widget _buildWeekDays() {
+    const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
+    return Row(
+      children: days.map((day) {
+        return Expanded(
+          child: Center(
+            child: Text(
+              day,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildCalendar(List habits) {
+    final firstDay = DateTime(selectedMonth.year, selectedMonth.month, 1);
 
     final daysInMonth = DateTime(
-      selectedDate.year,
-      selectedDate.month + 1,
+      selectedMonth.year,
+      selectedMonth.month + 1,
       0,
     ).day;
 
-    // Monday = 0, Sunday = 6
-    final firstWeekday = firstDay.weekday - 1;
+    // Monday = 1, Sunday = 7.
+    final startingOffset = firstDay.weekday - 1;
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppColors.border,
-        ),
-      ),
-      child: Column(
-        children: [
-          // Month header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                onPressed: () {
-                  setState(() {
-                    selectedDate = DateTime(
-                      selectedDate.year,
-                      selectedDate.month - 1,
-                      1,
-                    );
-                  });
-                },
-                icon: const Icon(
-                  Icons.chevron_left_rounded,
-                ),
-              ),
+    final totalCells = startingOffset + daysInMonth;
 
-              Text(
-                _monthName(selectedDate.month),
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
+    final rows = (totalCells / 7).ceil();
 
-              IconButton(
-                onPressed: () {
-                  setState(() {
-                    selectedDate = DateTime(
-                      selectedDate.year,
-                      selectedDate.month + 1,
-                      1,
-                    );
-                  });
-                },
-                icon: const Icon(
-                  Icons.chevron_right_rounded,
-                ),
-              ),
-            ],
-          ),
+    return Column(
+      children: List.generate(rows, (row) {
+        return Row(
+          children: List.generate(7, (column) {
+            final cellIndex = row * 7 + column;
+            final dayNumber = cellIndex - startingOffset + 1;
 
-          const SizedBox(height: 10),
+            if (dayNumber < 1 || dayNumber > daysInMonth) {
+              return const Expanded(child: SizedBox(height: 52));
+            }
 
-          // Week days
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: const [
-              _WeekDay('M'),
-              _WeekDay('T'),
-              _WeekDay('W'),
-              _WeekDay('T'),
-              _WeekDay('F'),
-              _WeekDay('S'),
-              _WeekDay('S'),
-            ],
-          ),
+            final date = DateTime(
+              selectedMonth.year,
+              selectedMonth.month,
+              dayNumber,
+            );
 
-          const SizedBox(height: 10),
+            final dateKey = _dateKey(date);
 
-          // Calendar days
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: firstWeekday + daysInMonth,
-            gridDelegate:
-                const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 4,
-            ),
-            itemBuilder: (context, index) {
-              if (index < firstWeekday) {
-                return const SizedBox();
-              }
+            final completedCount = habits.where((habit) {
+              return habit.completedDates.contains(dateKey);
+            }).length;
 
-              final day = index - firstWeekday + 1;
+            final isToday = _isToday(date);
 
-              final date = DateTime(
-                selectedDate.year,
-                selectedDate.month,
-                day,
-              );
-
-              final isSelected = _sameDate(
-                date,
-                selectedDate,
-              );
-
-              final isToday = _sameDate(
-                date,
-                DateTime.now(),
-              );
-
-              return GestureDetector(
+            return Expanded(
+              child: GestureDetector(
                 onTap: () {
                   setState(() {
                     selectedDate = date;
                   });
                 },
-                child: Container(
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.purple
-                        : isToday
-                            ? AppColors.lightPurple
-                            : Colors.transparent,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    '$day',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected
-                          ? Colors.white
-                          : isToday
-                              ? AppColors.purple
-                              : AppColors.textPrimary,
-                    ),
-                  ),
+                child: _buildDay(
+                  dayNumber,
+                  completedCount,
+                  habits.length,
+                  isToday,
                 ),
-              );
-            },
-          ),
-        ],
-      ),
+              ),
+            );
+          }),
+        );
+      }),
     );
   }
 
-  Widget _habitItem(String name, bool completed) {
+  Widget _buildDay(int day, int completedCount, int totalHabits, bool isToday) {
+    final hasCompletion = completedCount > 0;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(16),
+      height: 52,
+      margin: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
+        color: hasCompletion
+            ? AppColors.purple.withValues(alpha: 0.1)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: AppColors.border,
+          color: isToday ? AppColors.purple : AppColors.border,
+          width: isToday ? 1.5 : 1,
         ),
       ),
-      child: Row(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: completed
-                  ? AppColors.green.withOpacity(0.12)
-                  : AppColors.lightPurple,
-              borderRadius: BorderRadius.circular(13),
-            ),
-            child: Icon(
-              completed
-                  ? Icons.check_rounded
-                  : Icons.circle_outlined,
-              color: completed
-                  ? AppColors.green
-                  : AppColors.purple,
+          Text(
+            '$day',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+              color: AppColors.textPrimary,
             ),
           ),
 
-          const SizedBox(width: 12),
+          if (hasCompletion) ...[
+            const SizedBox(height: 3),
 
-          Expanded(
-            child: Text(
-              name,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+            Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: AppColors.purple,
+                shape: BoxShape.circle,
               ),
             ),
-          ),
-
-          if (completed)
-            const Text(
-              'Done',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.green,
-              ),
-            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _emptyState() {
+  Widget _buildLegend() {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: const BoxDecoration(
+            color: AppColors.purple,
+            shape: BoxShape.circle,
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        const Text(
+          'Habit completed',
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+
+        const Spacer(),
+
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.purple, width: 1.5),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        const Text(
+          'Today',
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectedDayInfo(List habits) {
+    final dateKey = _dateKey(selectedDate);
+
+    final completedHabits = habits
+        .where((habit) => habit.completedDates.contains(dateKey))
+        .toList();
+
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.border,
-        ),
+        border: Border.all(color: AppColors.border),
       ),
-      child: const Column(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.event_available_rounded,
-            size: 40,
-            color: AppColors.grey,
-          ),
-          SizedBox(height: 10),
           Text(
-            'No habits yet',
-            style: TextStyle(
+            _formatDate(selectedDate),
+            style: const TextStyle(
+              fontSize: 17,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
-          SizedBox(height: 5),
-          Text(
-            'Create a habit to start tracking your progress.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
+
+          const SizedBox(height: 14),
+
+          if (completedHabits.isEmpty)
+            const Text(
+              'No habits completed on this day.',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            )
+          else
+            ...completedHabits.map(
+              (habit) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      size: 20,
+                      color: AppColors.purple,
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    Expanded(
+                      child: Text(
+                        habit.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
         ],
       ),
     );
   }
 
-  bool _sameDate(DateTime a, DateTime b) {
-    return a.year == b.year &&
-        a.month == b.month &&
-        a.day == b.day;
+  DateTime selectedDate = DateTime.now();
+
+  bool _isToday(DateTime date) {
+    final today = DateTime.now();
+
+    return date.year == today.year &&
+        date.month == today.month &&
+        date.day == today.day;
+  }
+
+  String _dateKey(DateTime date) {
+    return '${date.year}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
   }
 
   String _monthName(int month) {
@@ -362,29 +362,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   String _formatDate(DateTime date) {
-    return '${_monthName(date.month)} ${date.day}, ${date.year}';
-  }
-}
-
-class _WeekDay extends StatelessWidget {
-  final String text;
-
-  const _WeekDay(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 32,
-      child: Center(
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ),
-    );
+    return '${_monthName(date.month)} '
+        '${date.day}, ${date.year}';
   }
 }

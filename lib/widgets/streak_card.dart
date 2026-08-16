@@ -47,10 +47,7 @@ class StreakCard extends StatelessWidget {
                 SizedBox(height: 4),
                 Text(
                   'Keep going! You are doing great.',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
             ),

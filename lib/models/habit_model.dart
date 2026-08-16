@@ -9,8 +9,10 @@ class Habit {
   final bool isCompleted;
   final int currentStreak;
   final DateTime createdAt;
+  final List<String> completedDates;
 
   const Habit({
+    this.completedDates = const [],
     this.id,
     required this.name,
     this.description = '',
@@ -34,6 +36,7 @@ class Habit {
     bool? isCompleted,
     int? currentStreak,
     DateTime? createdAt,
+    List<String>? completedDates,
   }) {
     return Habit(
       id: id ?? this.id,
@@ -46,6 +49,7 @@ class Habit {
       isCompleted: isCompleted ?? this.isCompleted,
       currentStreak: currentStreak ?? this.currentStreak,
       createdAt: createdAt ?? this.createdAt,
+      completedDates: completedDates ?? this.completedDates,
     );
   }
 
@@ -60,6 +64,7 @@ class Habit {
       'repeatDays': repeatDays.join(','),
       'isCompleted': isCompleted ? 1 : 0,
       'currentStreak': currentStreak,
+      'completedDates': completedDates.join(','),
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -80,9 +85,12 @@ class Habit {
           .toList(),
       isCompleted: map['isCompleted'] == 1,
       currentStreak: map['currentStreak'] ?? 0,
-      createdAt: DateTime.parse(
-        map['createdAt'],
-      ),
+      createdAt: DateTime.parse(map['createdAt']),
+      completedDates: (map['completedDates'] ?? '')
+    .toString()
+    .split(',')
+    .where((value) => value.isNotEmpty)
+    .toList(),
     );
   }
 }
